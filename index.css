@@ -1,0 +1,97 @@
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  font-family: 'Segoe UI', Meiryo, system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+}
+
+#render-area {
+  width: 100%;
+  height: 100%;
+  background-color: #15202b;
+  color: lightgray;
+}
+
+.main-container {
+  width: 1280px;
+  max-width: 95vw;
+  outline: 1px solid rgb(56, 68, 77);
+  height: 100%;
+  margin: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.header-text {
+  font-size: 2rem;
+  color: inherit;
+  line-height: 3rem;
+  margin: 1.5rem 1.5rem 0.5rem 1.5rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+@media screen and (min-width: 600px) {
+  .option-group {
+    padding: 0rem 4rem;
+  }
+}
+
+.inner-container {
+  outline: 1px solid rgb(56, 68, 77);
+  max-height: 900px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  overflow: auto;
+  justify-content: center;
+}
+
+.bottom-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.option-item {
+  background-color: white;
+  padding: 0.5rem 1rem;
+  color: rgb(56, 66, 73);
+  border-radius: 1rem;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  margin: 0.5rem 1rem;
+}
+
+.option-selected {
+  background-color: rgb(82, 82, 82) !important;
+  color: white !important;
+}
+
+.option-btn {
+  background-color: rgb(25, 122, 187) !important;
+  color: rgb(220, 220, 220) !important;
+}
+
+.option-item:hover {
+  opacity: 0.7;
+}
+
+.option-item:active {
+  transform: scale(0.95);
+}
