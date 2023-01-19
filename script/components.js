@@ -47,7 +47,7 @@ const InnerContainer = (props) => {
           return OptionItem(op)
         })
       ),
-      BottomRow([AppendBtn(), ClearBtn()]),
+      BottomRow([AppendBtn(), ClearBtn(), ClearAllOptionBtn()]),
     ],
     name: 'div',
   })
@@ -93,7 +93,27 @@ const ClearBtn = () => {
         },
       },
     },
-    text: 'clear_all',
+    text: 'clear all selected',
+    name: 'button',
+  })
+}
+
+const ClearAllOptionBtn = () => {
+  const ClearAllOption = () => {
+    // directly use global renderer
+    renderer.state = []
+  }
+  return create({
+    props: {
+      className: 'option-item option-btn',
+      type: 'button',
+      event: {
+        click: () => {
+          ClearAllOption()
+        },
+      },
+    },
+    text: 'clear all',
     name: 'button',
   })
 }

@@ -179,7 +179,6 @@ const diff = (newNode, element) => {
     // classname
     const attrList = ['class', 'style']
     attrList.forEach((attr) => {
-
       if (
         isNodeElement(domNodes[index]) &&
         domNodes[index].getAttribute(attr) !== node.getAttribute(attr)
@@ -274,7 +273,7 @@ const proxyHandler = (instance, action = undefined) => ({
  */
 class DynamicRender {
   element
-  state
+  #state
   template
   debounce
 
@@ -282,35 +281,36 @@ class DynamicRender {
     this.element = document.querySelector(options.selector)
     console.info('%c [render area in]: ', consoleStyle, this.element)
 
-    this.state = new Proxy(options.data, proxyHandler(this, options.action))
+    this.#state = new Proxy(options.data, proxyHandler(this, options.action))
     this.template = options.template
     this.debounce = null
   }
 
   get state() {
-    return this.state
+    return this.#state
   }
 
   //   should not set the whole state except constructor
 
-  //   set state(newState) {
-  //     this.state = new Proxy(newState, proxyHandler(this, option.action));
-  //     debounce(this);
-  //     return true;
-  //   }
+  set state(newState) {
+    // this.#state = new Proxy(newState, proxyHandler(this, option.action));
+    // debounce(this);
+    // return true;
+    return false
+  }
 
   setState = (newState) => {
     const statesEntries = Object.entries(newState)
     statesEntries.forEach(([key, value], index) => {
       if (value || value === '') {
-        this.state[key] = value
+        this.#state[key] = value
       }
     })
   }
 
   render = () => {
     // Convert the template to HTML
-    const templateHTML = this.template(this.state)
+    const templateHTML = this.template(this.#state)
 
     // Diff the DOM
     diff(templateHTML, this.element)
