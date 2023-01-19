@@ -1,8 +1,9 @@
 # VanillaJS Dynamic Renderer
 
 A function written in vanilla js. Perform dynamic rendering mainly using ES6 [Proxy](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Proxy)\
-Can subscribe to state changes and invoke re-render.
-
+Can subscribe to state changes and invoke re-render.\
+\
+[DEMO](https://vanlilla-js-dynamic-renderer.netlify.app/)
 ## How to use
 
 Include the dynamic_renderer.js file into your html file.\
