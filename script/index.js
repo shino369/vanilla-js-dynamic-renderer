@@ -8,7 +8,7 @@ const initialState = {
 
 /**
  * return template html
- * @param {*} props
+ * @param {Object} props
  * @returns
  */
 const template = (props) => {
