@@ -187,10 +187,6 @@ const diff = (newNode, element) => {
       }
     })
 
-    // style
-    if (domNodes[index].className !== node.className) {
-      domNodes[index].className = node.className
-    }
 
     if (
       templateContent &&
