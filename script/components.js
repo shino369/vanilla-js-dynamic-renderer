@@ -101,7 +101,7 @@ const ClearBtn = () => {
 const ClearAllOptionBtn = () => {
   const ClearAllOption = () => {
     // directly use global renderer
-    renderer.state = []
+    renderer.setState({ selectedSet: new Set(), options: [] })
   }
   return create({
     props: {
