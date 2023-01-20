@@ -219,7 +219,8 @@ const debouncedRender = debounce((func) => {
  * @param {*} action custom afterward action
  * @returns
  */
-const proxyExist = new WeakSet();
+// const proxyExist = new WeakSet();
+let oldStack = [];
 const proxyHandler = (instance, actions = []) => ({
   get: (proxyObj, key) => {
     // to prevent too many proxy listener, maybe should not proxy child level array || object ?
@@ -244,7 +245,7 @@ const proxyHandler = (instance, actions = []) => ({
   },
   set: (proxyObj, key, value) => {
     console.info('%c [props changed]: ', consoleStyle, [key, value]);
-    const old = { ...proxyObj };
+    oldStack.push({ ...proxyObj });
     proxyObj[key] = value;
 
     const func = () => {
@@ -253,11 +254,12 @@ const proxyHandler = (instance, actions = []) => ({
       // custom action want to perform along with rerender
       if (actions.length > 0) {
         actions.forEach((action) => {
-          action(old, proxyObj);
+          action(oldStack[0], proxyObj);
         });
+        oldStack = [];
       }
     };
-
+    // func()
     debouncedRender(func);
 
     return true;

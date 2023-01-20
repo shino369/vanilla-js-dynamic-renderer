@@ -58,7 +58,7 @@ const OptionItem = (option) => {
   const optionOnClick = (e) => {
     const newSet = new Set(renderer.state.selectedSet)
     newSet.has(e) ? newSet.delete(e) : newSet.add(e)
-    renderer.setState({ selectedSet: newSet })
+    renderer.setState({ selectedSet: newSet, uuid: crypto.randomUUID() })
   }
 
   return create({

@@ -4,6 +4,7 @@ const initialState = {
     label: `option ${index + 1}`,
     value: index + 1,
   })),
+  uuid: ''
 };
 
 /**
