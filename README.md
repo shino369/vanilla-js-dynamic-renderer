@@ -2,7 +2,11 @@
 
 A function written in vanilla js. Perform dynamic rendering mainly using ES6 [Proxy](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Proxy)\
 Can subscribe to state changes and invoke re-render.\
+Suitable for adding a specific part of area for dynamic rendering.\
 \
+For example, only perform dynamic rendering inside a modal dialog wether other part are written stically.\
+\
+<img src="./assets/dialog.jpg">\
 [DEMO](https://vanilla-js-dynamic-renderer.netlify.app/)
 ## How to use
 
@@ -33,17 +37,26 @@ const template = (props) => {
   // write your html here
   // if using template literal, i.e. `<div>${child}</div>`, return with stringToHTML()
   // const {...} = props
-  return wrapperFragment([MainContainer()])
-}
+  return wrapperFragment([MainContainer()]);
+};
+
+// custom update function
+const onStateUpdate = (oldState, newState) => {
+  console.log('old state: ', oldState);
+  console.log('new state: ', newState);
+};
 
 const renderer = new DynamicRender({
   selector: '#render-area',
   data: initialState,
   template: (props) => {
-    return template(props)
+    return template(props);
   },
-})
+  // func will be fired each time
+  actions: [onStateUpdate],
+});
 
 // start rendering
-renderer.render()
+renderer.render();
+
 ```
