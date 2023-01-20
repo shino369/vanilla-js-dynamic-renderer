@@ -4,7 +4,7 @@ A function written in vanilla js. Perform dynamic rendering mainly using ES6 [Pr
 Can subscribe to state changes and invoke re-render.\
 Suitable for adding a specific part of area for dynamic rendering.\
 \
-For example, only perform dynamic rendering inside a modal dialog while other parts are written stically.\
+For example, only perform dynamic rendering inside a modal dialog while other parts are written statically.\
 \
 <img src="./assets/dialog.jpg">\
 [DEMO](https://shino369.github.io/vanilla-js-dynamic-renderer/)
