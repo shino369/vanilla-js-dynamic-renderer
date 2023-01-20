@@ -7,7 +7,7 @@ Suitable for adding a specific part of area for dynamic rendering.\
 For example, only perform dynamic rendering inside a modal dialog wether other part are written stically.\
 \
 <img src="./assets/dialog.jpg">\
-[DEMO](https://vanilla-js-dynamic-renderer.netlify.app/)
+[DEMO](https://shino369.github.io/vanilla-js-dynamic-renderer/)
 ## How to use
 
 Include the dynamic_renderer.js file into your html file.\
