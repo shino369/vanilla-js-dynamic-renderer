@@ -60,3 +60,12 @@ const renderer = new DynamicRender({
 renderer.render();
 
 ```
+
+To update a state, call:
+```javascript
+renderer.setState({key: newValue})
+```
+or directly
+```javascript
+renderer._state[key] = newValue
+```
