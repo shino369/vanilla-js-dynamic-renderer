@@ -228,7 +228,7 @@ const debouncedRender = debounce((func) => {
  * @param {*} action custom afterward action
  * @returns
  */
-const proxyHandler = (instance, action = undefined) => ({
+const proxyHandler = (instance, actions = []) => ({
   get: (proxyObj, key) => {
     // to prevent too many proxy listener, will not proxy child level array || object
     // basically all settter method is calling setState in DynamicRender class
@@ -241,14 +241,17 @@ const proxyHandler = (instance, action = undefined) => ({
   },
   set: (proxyObj, key, value) => {
     console.info('%c [props changed]: ', consoleStyle, [key, value])
+    const old = {...proxyObj}
     proxyObj[key] = value
 
     const func = () => {
-      console.log('trigger rerender')
+      // console.log('trigger rerender')
       debounceRender(instance)
       // custom action want to perform along with rerender
-      if (action) {
-        action()
+      if (actions.length > 0) {
+        actions.forEach((action) => {
+          action(old, proxyObj)
+        })
       }
     }
 
@@ -277,7 +280,7 @@ class DynamicRender {
     this.element = document.querySelector(options.selector)
     console.info('%c [render area in]: ', consoleStyle, this.element)
 
-    this.#state = new Proxy(options.data, proxyHandler(this, options.action))
+    this.#state = new Proxy(options.data, proxyHandler(this, options.actions))
     this.template = options.template
     this.debounce = null
   }
@@ -289,7 +292,7 @@ class DynamicRender {
   //   should not set the whole state except constructor
 
   set state(newState) {
-    // this.#state = new Proxy(newState, proxyHandler(this, option.action));
+    // this.#state = new Proxy(newState, proxyHandler(this, option.actions));
     // debounce(this);
     // return true;
     return false
