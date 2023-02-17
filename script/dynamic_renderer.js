@@ -25,8 +25,8 @@ const consoleStyle = `color: white; background: #483D8B; padding: 0.25rem;`;
 
 /**
  * function to convert template string to html node and add props
- * @param {*} str   tempalte
- * @param {*} scope function to be used in event listener
+ * @param {String} str   tempalte
+ * @param {Function} scope function to be used in event listener
  * @returns
  */
 const strToNode = (str, scope = {}) => {
@@ -90,8 +90,8 @@ const strToNode = (str, scope = {}) => {
 
 /**
  * function debouncer
- * @param {*} callback
- * @param {*} wait
+ * @param {Function} callback
+ * @param {Number} wait
  * @returns
  */
 const debounce = (callback, wait) => {
@@ -106,7 +106,7 @@ const debounce = (callback, wait) => {
 
 /**
  * function to create node by props.
- * @param {*} elementProps
+ * @param {Object} elementProps
  * @returns
  */
 const create = (elementProps) => {
@@ -150,7 +150,7 @@ const create = (elementProps) => {
 
 /**
  * wrap element into fragment if necessary
- * @param {*} elements
+ * @param {NodeList} elements
  * @returns
  */
 const wrapperFragment = (elements) => {
@@ -163,7 +163,7 @@ const wrapperFragment = (elements) => {
 
 /**
  * convert string to html element if necessary
- * @param {*} str
+ * @param {String} str
  * @returns
  */
 const stringToHTML = (str) => {
@@ -293,7 +293,7 @@ const debouncedRender = debounce((func) => {
 /**
  * proxy handler
  * @param {*} instance renderer
- * @param {*} action custom afterward action
+ * @param {Function} action custom afterward action
  * @returns
  */
 // const proxyExist = new WeakSet();
