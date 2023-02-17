@@ -1,3 +1,23 @@
+/* 
+Author: Anthony Wong (shino369)
+
+es6 support is needed
+
+A function written in vanilla js. Perform dynamic rendering mainly using ES6 Proxy
+Can subscribe to state changes and invoke re-render.
+Suitable for adding a specific part of area for dynamic rendering.
+
+Provided a create function for writing functional component.
+call: DRJS.create({props: {...}, children: [...], name: string})
+
+Provided a parsing function to parse template string html to node
+For event listener like <div onClick="()=>{someFunc()}">, if someFunc() is declared in local scope, pass it to 2nd param
+call: DRJS.parseStr(str, {...scopeFunc})
+
+repo: https://github.com/shino369/vanilla-js-dynamic-renderer
+
+*/
+
 // global constant
 const consoleStyle = `color: white; background: #483D8B; padding: 0.25rem;`;
 
@@ -5,9 +25,9 @@ const consoleStyle = `color: white; background: #483D8B; padding: 0.25rem;`;
 
 /**
  * function to convert template string to html node and add props
- * @param {*} str 
- * @param {*} scope 
- * @returns 
+ * @param {*} str   tempalte
+ * @param {*} scope function to be used in event listener
+ * @returns
  */
 const strToNode = (str, scope = {}) => {
   const template = document.createElement('div');
@@ -85,7 +105,7 @@ const debounce = (callback, wait) => {
 };
 
 /**
- * function to create node by props. 
+ * function to create node by props.
  * @param {*} elementProps
  * @returns
  */
@@ -280,7 +300,7 @@ const debouncedRender = debounce((func) => {
 let oldStack = [];
 const proxyHandler = (instance, actions = []) => ({
   get: (proxyObj, key) => {
-    // to prevent too many proxy listener, maybe should not proxy child level array || object ?
+    // to prevent too many proxy listener, avoid proxy child level array || object
     // basically all settter method is calling setState in DynamicRender class
 
     const prop = proxyObj[key];
@@ -351,7 +371,7 @@ class DynamicRender {
     return this._state;
   }
 
-  //   should not set the whole state except constructor
+  // should not set the whole state except constructor
 
   set state(newState) {
     // this._state = new Proxy(newState, proxyHandler(this, option.actions));
