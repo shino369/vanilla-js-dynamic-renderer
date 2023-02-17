@@ -3,16 +3,69 @@ const consoleStyle = `color: white; background: #483D8B; padding: 0.25rem;`;
 
 //===================== renderer element ===================
 
-const propToStr = (props) => {
-  let str = '';
-  const entries = Object.entries(props); // [a: b]...
-  entries.forEach(([key, value], index) => {
-    if (index === 0) {
-      str += ' ';
+/**
+ * function to convert template string to html node and add props
+ * @param {*} str 
+ * @param {*} scope 
+ * @returns 
+ */
+const strToNode = (str, scope = {}) => {
+  const template = document.createElement('div');
+  template.innerHTML = str.trim();
+  const node = template;
+
+  const addPropsAndEvents = (node) => {
+    const attrs = node.attributes;
+    const props = Array.from(attrs)
+      .filter((attr) => !attr.name.startsWith('on'))
+      .reduce((props, attr) => {
+        props[attr.name] = attr.value;
+        return props;
+      }, {});
+    const events = Array.from(attrs)
+      .filter((attr) => attr.name.startsWith('on'))
+      .reduce((events, attr) => {
+        const eventName = attr.name.slice(2);
+        const eventHandler = attr.value;
+        events[eventName] = eventHandler;
+        return events;
+      }, {});
+
+    Object.entries(props).forEach(([name, value]) => {
+      node[name] = value;
+    });
+
+    Object.entries(events).forEach(([name, value]) => {
+      let fn;
+      if (this[value]) {
+        // found in global scope
+        fn = this[value];
+      } else {
+        const fnBody = value.replace(/(^|\W)(\w+)/g, (_, prefix, fName) =>
+          fName in scope ? `${prefix}scope.${fName}` : _
+        );
+        // console.log(scope)
+        fn = new Function('scope', `return (${fnBody})`)(scope);
+      }
+
+      // console.log(name, fn);
+      node.removeAttribute('on' + name);
+      node.addEventListener(name, fn);
+    });
+  };
+
+  const traverse = (node) => {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      addPropsAndEvents(node);
+      Array.from(node.childNodes).forEach((child) => {
+        traverse(child);
+      });
     }
-    str += `${key}="${value}"`;
-  });
-  return str;
+  };
+
+  traverse(node);
+
+  return wrapperFragment(node.childNodes);
 };
 
 /**
@@ -32,7 +85,7 @@ const debounce = (callback, wait) => {
 };
 
 /**
- * function to create node
+ * function to create node by props. 
  * @param {*} elementProps
  * @returns
  */
@@ -48,10 +101,14 @@ const create = (elementProps) => {
       });
     } else {
       if (key === 'style') {
-        const styleList = Object.entries(value);
-        styleList.forEach(([styleKey, styleValue]) => {
-          newNode.style[styleKey] = styleValue;
-        });
+        if (typeof value === 'string') {
+          newNode.setAttribute('style', value);
+        } else {
+          const styleList = Object.entries(value);
+          styleList.forEach(([styleKey, styleValue]) => {
+            newNode.style[styleKey] = styleValue;
+          });
+        }
       } else {
         newNode[key] = value;
       }
@@ -320,3 +377,10 @@ class DynamicRender {
     diff(templateHTML, this.element);
   };
 }
+
+// group
+const DRJS = {
+  create: create,
+  wrapper: wrapperFragment,
+  parseStr: strToNode,
+};
