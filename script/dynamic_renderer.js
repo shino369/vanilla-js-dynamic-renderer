@@ -399,7 +399,9 @@ class DynamicRender {
 }
 
 // group
+/* export if using module*/
 const DRJS = {
+  DynamicRender: DynamicRender,
   create: create,
   wrapper: wrapperFragment,
   parseStr: strToNode,
