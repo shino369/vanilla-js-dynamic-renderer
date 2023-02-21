@@ -406,3 +406,176 @@ const DRJS = {
   wrapper: wrapperFragment,
   parseStr: strToNode,
 };
+
+
+const selectedArr = [1,2,3]
+
+const optionArr = {
+  1: ['op1', 'op2'],
+  2: ['op3', 'op4'],
+  3: ['op5', 'op6'],
+}
+
+const testArr = ['a', 'b', 'c']
+
+const templateStr = `
+<div class="d-flex w-70 flex-wrap">
+  <div v-for="(selected, index1) in selectedArr" :key="index1">
+    <div v-for="(op, index2) in optionArr[selected]" :key="index2">
+        <div
+          class="right-badge"
+          :click="onElementClick(op)"
+          style="{
+            'background-color': index%2===0? 'lightgray':'lightsteelblue'
+          }">
+            {{ op }}
+          </div>
+
+          <div v-for="(sub, index3) in testArr" :key="index3"> {{sub}} </div>
+    </div>
+    <div>123</div>
+  </div>
+</div>
+`
+
+function parseTemplateStr(str) {
+  // create a temporary div to hold the parsed nodes
+  const tempDiv = document.createElement('div');
+
+  // replace all opening v-for tags with a unique placeholder
+  console.log(str)
+  str = str.replace(/v-for="(.*?)"/g, 'data-v-for="$1"');
+  str = str.replace(/\n/g, '');
+  // replace all binding expressions with a unique placeholder
+  // str = str.replace(/{{\s*(.*?)\s*}}/g, 'data-bind="$1"');
+
+  // set the temporary div's innerHTML to the modified template string
+  tempDiv.innerHTML = str;
+  
+  // process all nodes with a data-v-for attribute
+  // const vForNodes = tempDiv.querySelectorAll('[data-v-for]');
+
+  const scope = {
+    ...window,
+  };
+
+
+  const constructNested = (tempDiv) => {
+    // get first node for each recursion, each recursion will remove the attr at last
+    const vForNode = tempDiv.querySelector('[data-v-for]');
+    if(vForNode) {
+      const vForExpr = vForNode.getAttribute('data-v-for');
+
+      // split the expression to [forExpr, arraykey]
+      const [forExpr, keyExpr] = vForExpr.split(' in ');
+
+      // split the expression to [itemKey, indexKey]
+      const [loopVar, indexVar] = forExpr.trim().slice(1, -1).split(',').map((str) => str.trim());
+
+      // get the actual array from scope. parent variable should be in global scope
+      const fnBody = keyExpr.replace(/(^|\W)(\w+)/g, (_, prefix, fName) =>
+            fName in scope ? `${prefix}scope.${fName}` : _
+        );
+      const keyArr = new Function('scope', `return (${fnBody})`)(scope);
+
+      // create a DocumentFragment to hold the cloned nodes
+      const fragment = new DocumentFragment();
+  
+      // loop through the key array and clone the vForNode for each item
+      keyArr.forEach((item, index) => {
+        // create a new or replacing old scope for the cloned node for each loop
+        scope[loopVar] = item
+        scope[indexVar] = index
+
+        // clone childen of the node and put it into fragment
+        const frag = new DocumentFragment();
+        const children = vForNode.childNodes; 
+        children.forEach((child) => {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const childCopy = child.cloneNode(true)
+            childCopy.textContent = childCopy.textContent.replace(/\s/g, '')
+            if(childCopy.textContent) {
+
+              const text = childCopy.textContent
+              const reg = new RegExp(/\{\{(.*?)\}\}/, 'g')
+              if (!text || !reg.test(text)) {
+                return void 0
+              }
+      
+              childCopy.textContent = text.replace(reg, (_, exp) => {
+                console.log(exp)
+                return exp.split('.')
+                  .reduce((_data, key) => {
+                    console.log([key])
+                    return scope[key.trim()]
+                  }, {})
+              })
+              
+
+              const newChild = childCopy
+              frag.appendChild(newChild)
+            }
+          } else {
+            const newChild = child.cloneNode(true)
+            frag.appendChild(newChild)
+          }
+  
+        })
+        // add the cloned node to the fragment
+        // fragment.appendChild(frag);
+        const clonedOwn = vForNode.cloneNode(true)
+        clonedOwn.replaceChildren(frag)
+  
+        clonedOwn.removeAttribute('data-v-for')
+        console.info('%c [node]: ', consoleStyle, clonedOwn);
+        fragment.appendChild(clonedOwn)
+      });
+      // console.log(fragment)
+      
+      // const old = vForNode.cloneNode(true)
+      // console.log(old)
+      // replace the original vForNode with the fragment
+      vForNode.replaceWith(fragment)
+      console.log(vForNode)
+      vForNode.removeAttribute('data-v-for')
+      constructNested(tempDiv)
+    }
+  }
+
+  constructNested(tempDiv)
+
+  // replace {{val}} to actual val
+  const bindDataToHTML = (frag) => {
+    frag.childNodes.forEach((node) => {
+      // go to inner-most child
+      if (node.hasChildNodes()) {
+        bindDataToHTML(node)
+      }
+      
+      // start replace
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent
+        const reg = new RegExp(/\{\{(.*?)\}\}/, 'g')
+        if (!text || !reg.test(text)) {
+          return void 0
+        }
+
+        node.textContent = text.replace(reg, (_, exp) => {
+          return exp.split('.')
+            .reduce((_data, key) => {
+              return scope[key.trim()]
+            }, {})
+        })
+      }
+      
+
+    })
+  }
+
+
+  // bindDataToHTML(vForNode)
+
+
+  // return the processed nodes as an array
+  return tempDiv;
+}

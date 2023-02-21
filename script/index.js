@@ -35,3 +35,5 @@ const renderer = new DynamicRender({
 
 // start rendering
 renderer.render();
+const element = parseTemplateStr(templateStr);
+console.log(element)
