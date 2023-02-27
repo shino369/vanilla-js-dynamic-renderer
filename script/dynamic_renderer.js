@@ -415,52 +415,137 @@ const optionArr = {
   3: ['op5', 'op6'],
 }
 
-const testArr = ['a', 'b', 'c']
+const testArr = [{label: 'a', value: 1}, {label: 'b', value: 2}, {label: 'c', value: 3}]
+
+function testFunc(e) {
+  alert(e)
+}
 
 const templateStr = `
 <div class="d-flex w-70 flex-wrap">
-  <div v-for="(selected, index1) in selectedArr" :key="index1">
-    <div v-for="(op, index2) in optionArr[selected]" :key="index2">
+  <div dr:for="(selected, index1) in selectedArr" dr:key="index1">
+    <div dr:for="(op, index2) in optionArr[selected]" dr:key="index2">
         <div
           class="right-badge"
-          :click="onElementClick(op)"
-          style="{
-            'background-color': index%2===0? 'lightgray':'lightsteelblue'
+          dr:class="{
+            'test-class': op === 'op1'
+          }"
+          dr:onclick="() => {
+            alert(selected)
+          }"
+          dr:style="{
+            backgroundColor: index2%2===0? 'lightgray':'lightsteelblue'
           }">
-            {{ op }}
+            {{ op }} {{ (function(){return 123})() }}
           </div>
 
-          <div v-for="(sub, index3) in testArr" :key="index3"> {{sub}} </div>
+          <div dr:for="(sub, index3) in testArr" dr:key="index3"> {{sub.label}} </div>
     </div>
     <div>123</div>
   </div>
 </div>
 `
 
-function parseTemplateStr(str) {
+
+
+const parseTemplateStr = (str) => {
   // create a temporary div to hold the parsed nodes
   const tempDiv = document.createElement('div')
 
-  // replace all opening v-for tags with a unique placeholder
+  // replace all opening dr:for and dr:key tags with a unique placeholder
   console.log(str)
-  str = str.replace(/v-for="(.*?)"/g, 'data-v-for="$1"')
-  str = str.replace(/:key="(.*?)"/g, 'v-bind-key="$1"')
+  str = str.replace(/dr:for="(.*?)"/g, 'data-v-for="$1"')
+
+  str.replace()
   str = str.replace(/\n/g, '')
-  // replace all binding expressions with a unique placeholder
-  // str = str.replace(/{{\s*(.*?)\s*}}/g, 'data-bind="$1"');
 
-  // set the temporary div's innerHTML to the modified template string
   tempDiv.innerHTML = str
-
-  // process all nodes with a data-v-for attribute
-  // const vForNodes = tempDiv.querySelectorAll('[data-v-for]');
 
   const scope = {
     ...window,
   }
 
-  const replaceTextNode = (tempDiv) => {
-    tempDiv.textContent = tempDiv.textContent.replace(/\s/g, '')
+
+  const wrapper = (elements) => {
+    const fragment = new DocumentFragment()
+    elements.forEach((element) => {
+      fragment.appendChild(element)
+    })
+    return fragment
+  }
+
+  const parseFunction = (expr, scope) => {
+    const fnBody = expr.replace(/(^|\W)(\w+)/g, (_, prefix, fName) => {
+      return this[fName] ? `${prefix}this.${fName}` : fName in scope ? `${prefix}scope.${fName}` : _
+    })
+    const newFunc = new Function('scope', `return (${fnBody})`)(scope)
+    return newFunc
+  }
+
+  const addPropsAndEvents = (node, scope) => {
+    const attrs = node.attributes
+    const newScope = {
+      ...scope
+    }
+    const props = Array.from(attrs)
+      .filter((attr) => !attr.name.startsWith('dr:on'))
+      .reduce((props, attr) => {
+        let ignore = false
+        if(attr.name.startsWith('dr:')) {
+          // console.log(attr.name, attr.value)
+          const parsedObj = parseFunction(attr.value, newScope)
+          // console.log(parsedObj)
+          const attrObj = parsedObj
+          const truncate = attr.name.slice(3)
+          switch (truncate) {
+            case 'class':
+              // console.log(['class'])
+              const concated =  Object.entries(attrObj).reduce((accu, [key, value]) => (value ? accu + key : accu + ''), '')
+              // console.log(concated)
+              attr.value = concated
+              break
+            case 'style':
+              // console.log(['style'])
+              Object.entries(attrObj).forEach(([styleKey, styleValue]) => {
+                node.style[styleKey] = styleValue
+              })
+              ignore = true
+              break
+          }
+          attr.name = truncate
+          node.removeAttribute(attr.name)
+        }
+
+        if(!ignore) {
+          props[attr.name] = attr.value
+        }
+        
+        return props
+      }, {})
+    const events = Array.from(attrs)
+      .filter((attr) => attr.name.startsWith('dr:on'))
+      .reduce((events, attr) => {
+        const eventName = attr.name.slice(5)
+        const eventHandler = attr.value
+        events[eventName] = eventHandler
+        return events
+      }, {})
+
+    Object.entries(props).forEach(([name, value]) => {
+      node[name] = value
+    })
+
+    Object.entries(events).forEach(([name, value]) => {
+      const fn = parseFunction(value, newScope)
+
+      // console.log(name, fn);
+      node.removeAttribute('dr:on' + name)
+      node.addEventListener(name, fn)
+    })
+  }
+
+  const replaceTextNode = (tempDiv, scope) => {
+    // tempDiv.textContent = tempDiv.textContent.replace(/\s/g, '')
     if (tempDiv.textContent) {
       const text = tempDiv.textContent
       const reg = new RegExp(/\{\{(.*?)\}\}/, 'g')
@@ -469,26 +554,26 @@ function parseTemplateStr(str) {
       }
 
       tempDiv.textContent = text.replace(reg, (_, exp) => {
-        return exp.split('.').reduce((_data, key) => {
-          return scope[key.trim()] || _
-        }, {})
+        return parseFunction(exp, scope)
+
       })
     }
   }
 
   const constructNested = (tempDiv) => {
     if (tempDiv.nodeType === Node.TEXT_NODE) {
-      replaceTextNode(tempDiv)
+      replaceTextNode(tempDiv, scope)
       return
+    } else if (tempDiv.nodeType === Node.ELEMENT_NODE) {
+      addPropsAndEvents(tempDiv, scope)
     }
+
     // get first node for each recursion, each recursion will remove the attr at last
     const vForNode = tempDiv.querySelector('[data-v-for]')
     if (vForNode) {
       const vForExpr = vForNode.getAttribute('data-v-for')
-
       // split the expression to [forExpr, arraykey]
       const [forExpr, keyExpr] = vForExpr.split(/\s+in\s/)
-
       // split the expression to [itemKey, indexKey]
       const [loopVar, indexVar] = forExpr
         .trim()
@@ -497,10 +582,7 @@ function parseTemplateStr(str) {
         .map((str) => str.trim())
 
       // get the actual array from scope. parent variable should be in global scope
-      const fnBody = keyExpr.replace(/(^|\W)(\w+)/g, (_, prefix, fName) =>
-        fName in scope ? `${prefix}scope.${fName}` : _
-      )
-      const keyArr = new Function('scope', `return (${fnBody})`)(scope)
+      const keyArr = parseFunction(keyExpr, scope)
 
       // create a DocumentFragment to hold the cloned nodes
       const fragment = new DocumentFragment()
@@ -510,58 +592,40 @@ function parseTemplateStr(str) {
         // create a new or replacing old scope for the cloned node for each loop
         scope[loopVar] = item
         scope[indexVar] = index
-
-        const frag = new DocumentFragment()
-
-        if (vForNode.hasChildNodes) {
+        const clonedVFor = vForNode.cloneNode(true) 
+        // const frag = new DocumentFragment()
+        if (clonedVFor.hasChildNodes) {
           // child node
-          const backup = vForNode.cloneNode(true)
-          constructNested(backup)
-          backup.childNodes.forEach((child) => {
-            // if child === textnode, replace with real value
+          constructNested(clonedVFor)
+          clonedVFor.childNodes.forEach((child) => {
+            // if child === textnode, replace with real value, else add props
             if (child.nodeType === Node.TEXT_NODE) {
-              replaceTextNode(child)
+              replaceTextNode(child, scope)
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+              addPropsAndEvents(child, scope)
             }
           })
 
           // search for inner v-for
-          constructNested(backup)
+          constructNested(clonedVFor)
 
           //restore old value after going back from recursion
           scope[loopVar] = item
           scope[indexVar] = index
-
-          // clone childen of the node and put it into fragment
-          const children = backup.childNodes
-          children.forEach((child) => {
-            const childCopy = child.cloneNode(true)
-            frag.appendChild(childCopy)
-          })
         }
 
         // add the cloned node to the fragment
-        // fragment.appendChild(frag);
-
-        const vKey = vForNode.getAttribute('v-bind-key').trim()
-
-        const clonedOwn = vForNode.cloneNode(true)
-        clonedOwn.replaceChildren(frag.cloneNode(true))
-        clonedOwn.removeAttribute('data-v-for')
-        clonedOwn.removeAttribute('v-bind-key')
-        clonedOwn.setAttribute('key', scope[vKey])
-        fragment.appendChild(clonedOwn)
+        clonedVFor.removeAttribute('data-v-for')
+        fragment.appendChild(clonedVFor)
       })
-      // console.log(fragment)
 
-      // const old = vForNode.cloneNode(true)
-      // console.log(old)
       // replace the original vForNode with the fragment
       vForNode.replaceWith(fragment)
       vForNode.removeAttribute('data-v-for')
       //next parallel node
       constructNested(tempDiv)
     } else {
-      // no further v-for, but not innermost, go deep
+      // no further v-for, but not innermost, go deep to convert textNode and add props
       if (tempDiv.hasChildNodes) {
         tempDiv.childNodes.forEach((child) => {
           constructNested(child)
@@ -571,6 +635,6 @@ function parseTemplateStr(str) {
   }
 
   constructNested(tempDiv)
-  // return the processed nodes as an array
-  return tempDiv
+  // return the processed nodes
+  return wrapper(tempDiv.childNodes)
 }
