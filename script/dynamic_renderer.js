@@ -415,7 +415,11 @@ const optionArr = {
   3: ['op5', 'op6'],
 }
 
-const testArr = [{label: 'a', value: 1}, {label: 'b', value: 2}, {label: 'c', value: 3}]
+const testArr = [
+  { label: 'a', value: 1 },
+  { label: 'b', value: 2 },
+  { label: 'c', value: 3 },
+]
 
 function testFunc(e) {
   alert(e)
@@ -423,7 +427,7 @@ function testFunc(e) {
 
 const templateStr = `
 <div class="d-flex w-70 flex-wrap">
-  <div dr:for="(selected, index1) in selectedArr" dr:key="index1">
+  <div dr:for="selected in selectedArr">
     <div dr:for="(op, index2) in optionArr[selected]" dr:key="index2">
         <div
           class="right-badge"
@@ -446,8 +450,6 @@ const templateStr = `
 </div>
 `
 
-
-
 const parseTemplateStr = (str) => {
   // create a temporary div to hold the parsed nodes
   const tempDiv = document.createElement('div')
@@ -464,7 +466,6 @@ const parseTemplateStr = (str) => {
   const scope = {
     ...window,
   }
-
 
   const wrapper = (elements) => {
     const fragment = new DocumentFragment()
@@ -484,14 +485,15 @@ const parseTemplateStr = (str) => {
 
   const addPropsAndEvents = (node, scope) => {
     const attrs = node.attributes
+    // get current instance
     const newScope = {
-      ...scope
+      ...scope,
     }
     const props = Array.from(attrs)
       .filter((attr) => !attr.name.startsWith('dr:on'))
       .reduce((props, attr) => {
         let ignore = false
-        if(attr.name.startsWith('dr:')) {
+        if (attr.name.startsWith('dr:')) {
           // console.log(attr.name, attr.value)
           const parsedObj = parseFunction(attr.value, newScope)
           // console.log(parsedObj)
@@ -500,7 +502,10 @@ const parseTemplateStr = (str) => {
           switch (truncate) {
             case 'class':
               // console.log(['class'])
-              const concated =  Object.entries(attrObj).reduce((accu, [key, value]) => (value ? accu + key : accu + ''), '')
+              const concated = Object.entries(attrObj).reduce(
+                (accu, [key, value]) => (value ? accu + key : accu + ''),
+                ''
+              )
               // console.log(concated)
               attr.value = concated
               break
@@ -516,10 +521,10 @@ const parseTemplateStr = (str) => {
           node.removeAttribute(attr.name)
         }
 
-        if(!ignore) {
+        if (!ignore) {
           props[attr.name] = attr.value
         }
-        
+
         return props
       }, {})
     const events = Array.from(attrs)
@@ -537,7 +542,6 @@ const parseTemplateStr = (str) => {
 
     Object.entries(events).forEach(([name, value]) => {
       const fn = parseFunction(value, newScope)
-
       // console.log(name, fn);
       node.removeAttribute('dr:on' + name)
       node.addEventListener(name, fn)
@@ -545,7 +549,6 @@ const parseTemplateStr = (str) => {
   }
 
   const replaceTextNode = (tempDiv, scope) => {
-    // tempDiv.textContent = tempDiv.textContent.replace(/\s/g, '')
     if (tempDiv.textContent) {
       const text = tempDiv.textContent
       const reg = new RegExp(/\{\{(.*?)\}\}/, 'g')
@@ -555,7 +558,6 @@ const parseTemplateStr = (str) => {
 
       tempDiv.textContent = text.replace(reg, (_, exp) => {
         return parseFunction(exp, scope)
-
       })
     }
   }
@@ -575,11 +577,14 @@ const parseTemplateStr = (str) => {
       // split the expression to [forExpr, arraykey]
       const [forExpr, keyExpr] = vForExpr.split(/\s+in\s/)
       // split the expression to [itemKey, indexKey]
+
+      // trim the forExpr (var, index)
       const [loopVar, indexVar] = forExpr
         .trim()
-        .slice(1, -1)
+        .replace(/\((.*?)\)/g, '$1')
         .split(/,/)
         .map((str) => str.trim())
+      console.log(loopVar)
 
       // get the actual array from scope. parent variable should be in global scope
       const keyArr = parseFunction(keyExpr, scope)
@@ -591,8 +596,11 @@ const parseTemplateStr = (str) => {
       keyArr.forEach((item, index) => {
         // create a new or replacing old scope for the cloned node for each loop
         scope[loopVar] = item
-        scope[indexVar] = index
-        const clonedVFor = vForNode.cloneNode(true) 
+        if (indexVar) {
+          scope[indexVar] = index
+        }
+
+        const clonedVFor = vForNode.cloneNode(true)
         // const frag = new DocumentFragment()
         if (clonedVFor.hasChildNodes) {
           // child node
@@ -611,7 +619,9 @@ const parseTemplateStr = (str) => {
 
           //restore old value after going back from recursion
           scope[loopVar] = item
-          scope[indexVar] = index
+          if (indexVar) {
+            scope[indexVar] = index
+          }
         }
 
         // add the cloned node to the fragment
