@@ -425,25 +425,29 @@ function testFunc(e) {
   alert(e)
 }
 
+const doge =
+  'https://media-cldnry.s-nbcnews.com/image/upload/t_nbcnews-fp-1200-630,f_auto,q_auto:best/rockcms/2022-01/210602-doge-meme-nft-mb-1715-8afb7e.jpg'
+
 const templateStr = `
 <div class="d-flex w-70 flex-wrap">
-  <div dr:for="selected in selectedArr">
-    <div dr:for="(op, index2) in optionArr[selected]" dr:key="index2">
+<img dr-src="doge" />
+  <div dr-for="selected in selectedArr">
+    <div dr-for="(op, index2) in optionArr[selected]">
         <div
           class="right-badge"
-          dr:class="{
+          dr-class="{
             'test-class': op === 'op1'
           }"
-          dr:onclick="() => {
+          dr-onclick="() => {
             alert(selected)
           }"
-          dr:style="{
+          dr-style="{
             backgroundColor: index2%2===0? 'lightgray':'lightsteelblue'
           }">
             {{ op }} {{ (function(){return 123})() }}
           </div>
 
-          <div dr:for="(sub, index3) in testArr" dr:key="index3"> {{sub.label}} </div>
+          <div dr-for="(sub, index3) in testArr" > {{sub.label}} </div>
     </div>
     <div>123</div>
   </div>
@@ -454,9 +458,8 @@ const parseTemplateStr = (str) => {
   // create a temporary div to hold the parsed nodes
   const tempDiv = document.createElement('div')
 
-  // replace all opening dr:for and dr:key tags with a unique placeholder
+  // replace all opening dr-for and dr-key tags with a unique placeholder
   console.log(str)
-  str = str.replace(/dr:for="(.*?)"/g, 'data-v-for="$1"')
 
   str.replace()
   str = str.replace(/\n/g, '')
@@ -490,45 +493,58 @@ const parseTemplateStr = (str) => {
       ...scope,
     }
     const props = Array.from(attrs)
-      .filter((attr) => !attr.name.startsWith('dr:on'))
+      .filter((attr) => !attr.name.startsWith('dr-on'))
       .reduce((props, attr) => {
-        let ignore = false
-        if (attr.name.startsWith('dr:')) {
+        let truncate = attr.name
+        let newVal = attr.value
+        if (!attr.name.startsWith('dr-for') && attr.name.startsWith('dr-')) {
+          let ignore = false
+         
           // console.log(attr.name, attr.value)
           const parsedObj = parseFunction(attr.value, newScope)
-          // console.log(parsedObj)
-          const attrObj = parsedObj
-          const truncate = attr.name.slice(3)
+          
+          truncate = attr.name.slice(3)
+
           switch (truncate) {
             case 'class':
               // console.log(['class'])
-              const concated = Object.entries(attrObj).reduce(
-                (accu, [key, value]) => (value ? accu + key : accu + ''),
+              const concated = Object.entries(parsedObj).reduce(
+                (accu, [key, value]) => {
+                  console.log([key, value, accu])
+                  return accu + (value ? key : '')
+                },
                 ''
               )
-              // console.log(concated)
-              attr.value = concated
+              console.log(concated)
+              newVal = concated
+              truncate = 'className'
               break
             case 'style':
-              // console.log(['style'])
-              Object.entries(attrObj).forEach(([styleKey, styleValue]) => {
+              Object.entries(parsedObj).forEach(([styleKey, styleValue]) => {
                 node.style[styleKey] = styleValue
               })
               ignore = true
               break
+            default:
+              // console.log(truncate, parsedObj)
+              newVal = parsedObj
+              break
           }
-          attr.name = truncate
+          // console.log('remove: ' + attr.name)
           node.removeAttribute(attr.name)
-        }
+          
 
-        if (!ignore) {
-          props[attr.name] = attr.value
+          if (!ignore) {
+            // console.log(props[truncate], [truncate, newVal])
+            props[truncate] = newVal
+
+          }
         }
 
         return props
       }, {})
     const events = Array.from(attrs)
-      .filter((attr) => attr.name.startsWith('dr:on'))
+      .filter((attr) => attr.name.startsWith('dr-on'))
       .reduce((events, attr) => {
         const eventName = attr.name.slice(5)
         const eventHandler = attr.value
@@ -536,14 +552,21 @@ const parseTemplateStr = (str) => {
         return events
       }, {})
 
-    Object.entries(props).forEach(([name, value]) => {
-      node[name] = value
+    Object.entries(props).forEach(([name, value], i) => {
+      console.log([name, value], i)
+      if(name === 'className') {
+        console.log(node[name], value)
+        node[name] = node[name] ? node[name] + ' ' + value : value
+      } else {
+        node[name] = value
+      }
+      
     })
 
     Object.entries(events).forEach(([name, value]) => {
       const fn = parseFunction(value, newScope)
       // console.log(name, fn);
-      node.removeAttribute('dr:on' + name)
+      node.removeAttribute('dr-on' + name)
       node.addEventListener(name, fn)
     })
   }
@@ -566,14 +589,14 @@ const parseTemplateStr = (str) => {
     if (tempDiv.nodeType === Node.TEXT_NODE) {
       replaceTextNode(tempDiv, scope)
       return
-    } else if (tempDiv.nodeType === Node.ELEMENT_NODE) {
+    } else {
       addPropsAndEvents(tempDiv, scope)
     }
 
     // get first node for each recursion, each recursion will remove the attr at last
-    const vForNode = tempDiv.querySelector('[data-v-for]')
+    const vForNode = tempDiv.querySelector('[dr-for]')
     if (vForNode) {
-      const vForExpr = vForNode.getAttribute('data-v-for')
+      const vForExpr = vForNode.getAttribute('dr-for')
       // split the expression to [forExpr, arraykey]
       const [forExpr, keyExpr] = vForExpr.split(/\s+in\s/)
       // split the expression to [itemKey, indexKey]
@@ -584,7 +607,6 @@ const parseTemplateStr = (str) => {
         .replace(/\((.*?)\)/g, '$1')
         .split(/,/)
         .map((str) => str.trim())
-      console.log(loopVar)
 
       // get the actual array from scope. parent variable should be in global scope
       const keyArr = parseFunction(keyExpr, scope)
@@ -609,7 +631,7 @@ const parseTemplateStr = (str) => {
             // if child === textnode, replace with real value, else add props
             if (child.nodeType === Node.TEXT_NODE) {
               replaceTextNode(child, scope)
-            } else if (child.nodeType === Node.ELEMENT_NODE) {
+            } else {
               addPropsAndEvents(child, scope)
             }
           })
@@ -625,13 +647,13 @@ const parseTemplateStr = (str) => {
         }
 
         // add the cloned node to the fragment
-        clonedVFor.removeAttribute('data-v-for')
+        clonedVFor.removeAttribute('dr-for')
         fragment.appendChild(clonedVFor)
       })
 
       // replace the original vForNode with the fragment
       vForNode.replaceWith(fragment)
-      vForNode.removeAttribute('data-v-for')
+      vForNode.removeAttribute('dr-for')
       //next parallel node
       constructNested(tempDiv)
     } else {
@@ -644,6 +666,7 @@ const parseTemplateStr = (str) => {
     }
   }
 
+  console.log(tempDiv.cloneNode(true))
   constructNested(tempDiv)
   // return the processed nodes
   return wrapper(tempDiv.childNodes)
