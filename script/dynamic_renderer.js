@@ -457,17 +457,14 @@ const templateStr = `
 const parseTemplateStr = (str) => {
   // create a temporary div to hold the parsed nodes
   const tempDiv = document.createElement('div')
-
-  // replace all opening dr-for and dr-key tags with a unique placeholder
   console.log(str)
-
-  str.replace()
   str = str.replace(/\n/g, '')
 
   tempDiv.innerHTML = str
 
+  // for variable declared in looping (a) in b
   const scope = {
-    ...window,
+    // ...window,
   }
 
   const wrapper = (elements) => {
@@ -482,6 +479,7 @@ const parseTemplateStr = (str) => {
     const fnBody = expr.replace(/(^|\W)(\w+)/g, (_, prefix, fName) => {
       return this[fName] ? `${prefix}this.${fName}` : fName in scope ? `${prefix}scope.${fName}` : _
     })
+    console.log(window.intvCount)
     const newFunc = new Function('scope', `return (${fnBody})`)(scope)
     return newFunc
   }
