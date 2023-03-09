@@ -1,3 +1,5 @@
+const {create, wrapperFragment} = DRJS
+
 const MainContainer = (props) => {
   return create({
     props: {
@@ -17,7 +19,7 @@ const Header = () => {
         props: {
           className: 'header-text',
         },
-        text: 'Vanilla-JS Dynamic Renderer',
+        children: 'Vanilla-JS Dynamic Renderer',
         name: 'div',
       }),
       create({
@@ -26,7 +28,7 @@ const Header = () => {
             padding: '0.5rem',
           },
         },
-        text: `Selected option(s): ${Array.from(
+        children: `Selected option(s): ${Array.from(
           renderer.state.selectedSet
         ).join(', ')}`,
         name: 'div',
@@ -72,7 +74,7 @@ const OptionItem = (option) => {
         },
       },
     },
-    text: option.label,
+    children: option.label,
     name: 'div',
   })
 }
@@ -93,7 +95,7 @@ const ClearBtn = () => {
         },
       },
     },
-    text: 'clear all selected',
+    children: 'clear all selected',
     name: 'button',
   })
 }
@@ -113,7 +115,7 @@ const ClearAllOptionBtn = () => {
         },
       },
     },
-    text: 'clear all',
+    children: 'clear all',
     name: 'button',
   })
 }
@@ -139,7 +141,7 @@ const AppendBtn = () => {
         },
       },
     },
-    text: 'append',
+    children: 'append',
     name: 'button',
   })
 }

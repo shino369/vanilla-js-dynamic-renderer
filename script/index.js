@@ -35,6 +35,3 @@ const renderer = new DynamicRender({
 
 // start rendering
 renderer.render();
-const element = parseTemplateStr(templateStr);
-document.body.appendChild(element)
-console.log(element)
