@@ -96,7 +96,7 @@ const DRJS = {
   create: (elementProps) => {
     const { name, props, children } = elementProps
     const newNode = document.createElement(name)
-    
+
     const propsLsit = Object.entries(props || {})
     propsLsit.forEach(([key, value]) => {
       if (key === 'event') {
@@ -115,11 +115,8 @@ const DRJS = {
             })
           }
         } else {
-          let _key = key
-          if (key === 'class') {
-            _key = 'className'
-          }
-          newNode[_key] = value
+          newNode.setAttribute(key, value)
+          //   newNode[_key] = value
         }
       }
     })
