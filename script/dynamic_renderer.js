@@ -10,8 +10,9 @@ Suitable for adding a specific part of area for dynamic rendering.
 Provided a create function for writing functional component.
 call: DRJS.create({props: {...}, children: [...], name: string})
 
-provide scope by calling DRJS.exec(()=>{...your code here})
-will fire after window onload
+provide separated scope by calling DRJS.exec(()=>{...your code here})
+will accumulate and fire all registed function after window onload
+will be helpful when using php component
 
 repo: https://github.com/shino369/vanilla-js-dynamic-renderer
 
@@ -121,21 +122,23 @@ const DRJS = {
       }
     })
 
+    const append = (newNode, node) => {
+      if (typeof node === 'string' || typeof node === 'number') {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = node
+        newNode.appendChild(DRJS.wrapperFragment(tempDiv.childNodes))
+      } else if (node instanceof Element) {
+        newNode.appendChild(node)
+      }
+    }
+
     if (children) {
       if (Array.isArray(children)) {
         children.forEach((child) => {
-          if (typeof child === 'string' || typeof child === 'number') {
-            newNode.appendChild(document.createTextNode(child))
-          } else if (child instanceof Element) {
-            newNode.appendChild(child)
-          }
+          append(newNode, child)
         })
       } else {
-        if (typeof children === 'string' || typeof children === 'number') {
-          newNode.appendChild(document.createTextNode(children))
-        } else if (children instanceof Element) {
-          newNode.appendChild(children)
-        }
+        append(newNode, children)
       }
     }
 
