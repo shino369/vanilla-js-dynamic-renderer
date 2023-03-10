@@ -24,14 +24,17 @@ const onStateUpdate = (oldState, newState) => {
   console.log('new state: ', newState);
 };
 
-const renderer = new DynamicRender({
+const renderer = new DynamicRender();
+const {Stateful} = renderer
+ClearBtn = Stateful(ClearBtn)
+renderer.mount({
   selector: '#render-area',
   data: initialState,
   template: (props) => {
     return template(props);
   },
   actions: [onStateUpdate],
-});
+})
 
 // start rendering
 renderer.render();

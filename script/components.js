@@ -80,7 +80,8 @@ const OptionItem = (option) => {
 }
 
 // functional component
-const ClearBtn = () => {
+let ClearBtn = () => {
+  const [count, setCount] = renderer.useState(0)
   const clearAll = () => {
     // directly use global renderer
     renderer.setState({ selectedSet: new Set() })
@@ -92,10 +93,11 @@ const ClearBtn = () => {
       event: {
         click: () => {
           clearAll()
+          setCount((prev) => prev + 1)
         },
       },
     },
-    children: 'clear all selected',
+    children: 'clear all selected:' + count,
     name: 'button',
   })
 }

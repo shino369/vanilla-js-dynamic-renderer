@@ -9,6 +9,7 @@ Suitable for adding a specific part of area for dynamic rendering.
 
 Provided a create function for writing functional component.
 call: DRJS.create({props: {...}, children: [...], name: string})
+children accpet: Element, text string, template html string
 
 provide separated scope by calling DRJS.exec(()=>{...your code here})
 will accumulate and fire all registed function after window onload
@@ -19,6 +20,8 @@ repo: https://github.com/shino369/vanilla-js-dynamic-renderer
 */
 
 // all warpped by DRJS to prevent conflict
+'use strict'
+
 const DRJS = {
   /**
    * @type {{[key:string]: (()=>void)[]}}
@@ -259,6 +262,24 @@ const DRJS = {
   },
   // global constant
   consoleStyle: `color: white; background: #483D8B; padding: 0.25rem;`,
+  components: {
+    flexRow: (children, props = undefined) => {
+      return DRJS.create({
+        name: 'div',
+        props: {
+          ...(props ? props : {}),
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            margin: '0.5rem',
+            ...(props && props.styles ? props.styles : {}),
+          },
+        },
+        children: children,
+      })
+    },
+  },
 }
 
 /**
@@ -286,14 +307,104 @@ class DynamicRender {
    * debounce rendering frame
    * @type {(() => void) | null}
    */
-  debounce
+  debounce = null
 
-  constructor(options) {
-    this.element = document.querySelector(options.selector)
-    // console.info('%c [start rendering in]: ', DRJS.consoleStyle, this.element)
-    this._state = new Proxy(options.data, this.proxyHandler(this, options.actions))
-    this.template = options.template
-    this.debounce = null
+  mounted = false
+
+  constructor() {}
+
+  // side effect
+  buckets = new WeakMap()
+  tngStack = []
+  Stateful = (...fns) => {
+    const instance = this
+    fns = fns.map(function mapper(fn) {
+      return tngf
+      // ******************
+      function tngf(...args) {
+       
+        instance.tngStack.push(tngf)
+        const bucket = instance.getCurrentBucket()
+        bucket.nextStateSlotIdx = 0
+
+        try {
+          return fn.apply(this, args)
+        } finally {
+          instance.tngStack.pop()
+        }
+      }
+    })
+
+    return fns.length < 2 ? fns[0] : fns
+  }
+
+  getCurrentBucket = () => {
+    if (this.tngStack.length > 0) {
+      let tngf = this.tngStack[this.tngStack.length - 1]
+      let bucket
+      if (!this.buckets.has(tngf)) {
+        bucket = {
+          nextStateSlotIdx: 0,
+          stateSlots: [],
+        }
+        this.buckets.set(tngf, bucket)
+      }
+
+      return this.buckets.get(tngf)
+    }
+  }
+
+  useReducer = (reducerFn, initialVal, ...initialReduction) => {
+    const bucket = this.getCurrentBucket()
+    if (bucket) {
+      // need to create this state-slot for this bucket?
+      if (!(bucket.nextStateSlotIdx in bucket.stateSlots)) {
+        let slot = [
+          typeof initialVal == 'function' ? initialVal() : initialVal,
+          function updateSlot(...v) {
+            slot[0] = reducerFn(slot[0], ...v)
+          },
+        ]
+        bucket.stateSlots[bucket.nextStateSlotIdx] = slot
+
+        // run the reducer initially?
+        if (initialReduction.length > 0) {
+          bucket.stateSlots[bucket.nextStateSlotIdx][1](initialReduction[0])
+        }
+      }
+
+      return [...bucket.stateSlots[bucket.nextStateSlotIdx++]]
+    } else {
+      throw new Error('useReducer() only valid inside an Articulated Function or a Custom Hook.')
+    }
+  }
+
+  useState = (initialVal) => {
+    const bucket = this.getCurrentBucket()
+    if (bucket) {
+      try {
+        return this.useReducer(function reducer(prevVal, ...vOrFns) {
+          const [vOrFn, action] = vOrFns
+          try {
+            return typeof vOrFn == 'function' ? vOrFn(prevVal) : vOrFn
+          } finally {
+            action && action()
+          }
+        }, initialVal)
+      } finally {
+        // rerender
+        this.debounceRender()
+      }
+    } else {
+      throw new Error('useState() only valid inside an Articulated Function or a Custom Hook.')
+    }
+  }
+
+  mount = ({ selector, template, data, actions }) => {
+    this.element = document.querySelector(selector)
+    this._state = new Proxy(data, this.proxyHandler(this, actions))
+    this.template = template
+    this.mounted = true
   }
 
   get state() {
@@ -303,7 +414,7 @@ class DynamicRender {
   // should not set the whole state except constructor
   set state(newState) {
     try {
-      throw new Error('Should mutate the state directly. Use setState().')
+      throw new Error('Should not mutate the state directly. Use setState().')
     } catch (e) {
       console.warn(e.message)
     }
@@ -327,18 +438,20 @@ class DynamicRender {
   }
 
   render = () => {
-    // Convert the template to HTML
-    const templateHTML = this.template(this._state)
+    if (this.mounted) {
+      // Convert the template to HTML
+      const templateHTML = this.template(this._state)
 
-    // Diff the DOM
-    DRJS.diff(templateHTML, this.element)
+      // Diff the DOM
+      DRJS.diff(templateHTML, this.element)
+    }
   }
 
   /**
    * debounce rendering
    * @param {DynamicRender} instance // this
    */
-  debounceRender = (instance) => {
+  debounceRender = (instance = this) => {
     // If there's a pending render, cancel it
     if (instance.debounce) {
       window.cancelAnimationFrame(instance.debounce)
