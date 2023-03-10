@@ -119,7 +119,11 @@ const DRJS = {
             })
           }
         } else {
-          newNode.setAttribute(key, value)
+          let _key = key
+          if(key === 'className') {
+            _key = 'class'
+          }
+          newNode.setAttribute(_key, value)
           //   newNode[_key] = value
         }
       }
