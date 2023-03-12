@@ -317,9 +317,10 @@ class DynamicRender {
 
   constructor() {}
 
-  // side effect
+  // side effect, reference from TNG hooks
   buckets = new WeakMap()
   tngStack = []
+
   Stateful = (...fns) => {
     const instance = this
     fns = fns.map(function mapper(fn) {
@@ -403,6 +404,18 @@ class DynamicRender {
       throw new Error('useState() only valid inside an Articulated Function or a Custom Hook.')
     }
   }
+
+  useRef = (initialValue) => {
+		if (this.getCurrentBucket()) {
+			// create a new {} object with a `current` property,
+			// save it in a state slot
+			const [ref] = this.useState({ current: initialValue, });
+			return ref;
+		}
+		else {
+			throw new Error("useRef() only valid inside an Articulated Function or a Custom Hook.");
+		}
+	}
 
   mount = ({ selector, template, data, actions }) => {
     this.element = document.querySelector(selector)

@@ -25,8 +25,8 @@ const onStateUpdate = (oldState, newState) => {
 };
 
 const renderer = new DynamicRender();
-const {Stateful} = renderer
-ClearBtn = Stateful(ClearBtn)
+MainContainer = renderer.Stateful(MainContainer)
+
 renderer.mount({
   selector: '#render-area',
   data: initialState,

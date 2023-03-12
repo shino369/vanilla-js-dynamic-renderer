@@ -1,6 +1,6 @@
 const {create, wrapperFragment} = DRJS
 
-const MainContainer = (props) => {
+let MainContainer = (props) => {
   return create({
     props: {
       className: 'main-container',
@@ -57,6 +57,7 @@ const InnerContainer = (props) => {
 
 // functional component
 const OptionItem = (option) => {
+  const [count, setCount] = renderer.useState(0)
   const optionOnClick = (e) => {
     const newSet = new Set(renderer.state.selectedSet)
     newSet.has(e) ? newSet.delete(e) : newSet.add(e)
@@ -71,16 +72,17 @@ const OptionItem = (option) => {
       event: {
         click: () => {
           optionOnClick(option.value)
+          setCount((prev) => prev + 1)
         },
       },
     },
-    children: option.label,
+    children: option.label + ' ' + count,
     name: 'div',
   })
 }
 
 // functional component
-let ClearBtn = () => {
+const ClearBtn = () => {
   const [count, setCount] = renderer.useState(0)
   const clearAll = () => {
     // directly use global renderer
